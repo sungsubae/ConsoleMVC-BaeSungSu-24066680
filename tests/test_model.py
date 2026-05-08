@@ -1,4 +1,4 @@
-import unittest
+import pytest
 from poc1_mvc.model.entities import (
     Customer, Sample, Order, Inventory, Process,
     OrderStatus, ProcessStage, ProcessStatus,
@@ -6,96 +6,115 @@ from poc1_mvc.model.entities import (
 from poc1_mvc.model.repository import InMemoryRepository
 
 
-class TestEntities(unittest.TestCase):
-    def test_customer_defaults(self):
-        c = Customer(name="홍길동", company="S-Semi", contact="010-0000-0000")
-        self.assertEqual(c.name, "홍길동")
-        self.assertEqual(len(c.id), 8)
-
-    def test_sample_defaults(self):
-        s = Sample(name="DRAM-A", type="DRAM", specification="16GB DDR5")
-        self.assertEqual(s.specification, "16GB DDR5")
-        self.assertIsNotNone(s.id)
-
-    def test_order_defaults(self):
-        o = Order(customer_id="CID", sample_id="SID", quantity=10)
-        self.assertEqual(o.status, OrderStatus.PENDING)
-        self.assertIsNotNone(o.created_at)
-
-    def test_inventory_defaults(self):
-        inv = Inventory(sample_id="SID", quantity=100)
-        self.assertEqual(inv.quantity, 100)
-
-    def test_process_defaults(self):
-        p = Process(order_id="OID", stage=ProcessStage.DESIGN)
-        self.assertEqual(p.status, ProcessStatus.WAITING)
-        self.assertIsNotNone(p.updated_at)
-
-    def test_unique_ids(self):
-        c1 = Customer(name="A", company="B", contact="C")
-        c2 = Customer(name="A", company="B", contact="C")
-        self.assertNotEqual(c1.id, c2.id)
-
-    def test_order_status_enum(self):
-        self.assertEqual(OrderStatus.PENDING.value, "대기")
-        self.assertEqual(OrderStatus.IN_PROGRESS.value, "진행중")
-        self.assertEqual(OrderStatus.COMPLETED.value, "완료")
-        self.assertEqual(OrderStatus.CANCELLED.value, "취소")
-
-    def test_process_stage_enum(self):
-        self.assertEqual(ProcessStage.DESIGN.value, "설계")
-        self.assertEqual(ProcessStage.FABRICATION.value, "제조")
-        self.assertEqual(ProcessStage.TESTING.value, "검사")
-        self.assertEqual(ProcessStage.DELIVERY.value, "납품")
-
-    def test_process_status_enum(self):
-        self.assertEqual(ProcessStatus.WAITING.value, "대기")
-        self.assertEqual(ProcessStatus.IN_PROGRESS.value, "진행중")
-        self.assertEqual(ProcessStatus.COMPLETED.value, "완료")
+# ── Fixtures ───────────────────────────────────────────────────────────────
+@pytest.fixture
+def repo():
+    return InMemoryRepository()
 
 
-class TestInMemoryRepository(unittest.TestCase):
-    def setUp(self):
-        self.repo: InMemoryRepository[Customer] = InMemoryRepository()
-        self.c1 = Customer(name="고객A", company="A사", contact="010-1111-1111")
-        self.c2 = Customer(name="고객B", company="B사", contact="010-2222-2222")
-
-    def test_find_all_empty(self):
-        self.assertEqual(self.repo.find_all(), [])
-
-    def test_save_and_find_all(self):
-        self.repo.save(self.c1)
-        self.repo.save(self.c2)
-        result = self.repo.find_all()
-        self.assertEqual(len(result), 2)
-
-    def test_find_by_id_found(self):
-        self.repo.save(self.c1)
-        found = self.repo.find_by_id(self.c1.id)
-        self.assertEqual(found, self.c1)
-
-    def test_find_by_id_not_found(self):
-        self.assertIsNone(self.repo.find_by_id("NOTEXIST"))
-
-    def test_update_existing(self):
-        self.repo.save(self.c1)
-        self.c1.name = "수정된이름"
-        result = self.repo.update(self.c1)
-        self.assertIsNotNone(result)
-        self.assertEqual(self.repo.find_by_id(self.c1.id).name, "수정된이름")
-
-    def test_update_not_existing(self):
-        result = self.repo.update(self.c1)
-        self.assertIsNone(result)
-
-    def test_delete_existing(self):
-        self.repo.save(self.c1)
-        self.assertTrue(self.repo.delete(self.c1.id))
-        self.assertIsNone(self.repo.find_by_id(self.c1.id))
-
-    def test_delete_not_existing(self):
-        self.assertFalse(self.repo.delete("NOTEXIST"))
+@pytest.fixture
+def c1():
+    return Customer(name="고객A", company="A사", contact="010-1111-1111")
 
 
-if __name__ == "__main__":
-    unittest.main()
+@pytest.fixture
+def c2():
+    return Customer(name="고객B", company="B사", contact="010-2222-2222")
+
+
+# ── 엔티티 기본값 ──────────────────────────────────────────────────────────
+def test_customer_defaults():
+    c = Customer(name="홍길동", company="S-Semi", contact="010-0000-0000")
+    assert c.name == "홍길동"
+    assert len(c.id) == 8
+
+
+def test_sample_defaults():
+    s = Sample(name="DRAM-A", type="DRAM", specification="16GB DDR5")
+    assert s.specification == "16GB DDR5"
+    assert s.id is not None
+
+
+def test_order_defaults():
+    o = Order(customer_id="CID", sample_id="SID", quantity=10)
+    assert o.status == OrderStatus.PENDING
+    assert o.created_at is not None
+
+
+def test_inventory_defaults():
+    inv = Inventory(sample_id="SID", quantity=100)
+    assert inv.quantity == 100
+
+
+def test_process_defaults():
+    p = Process(order_id="OID", stage=ProcessStage.DESIGN)
+    assert p.status == ProcessStatus.WAITING
+    assert p.updated_at is not None
+
+
+def test_unique_ids():
+    c1 = Customer(name="A", company="B", contact="C")
+    c2 = Customer(name="A", company="B", contact="C")
+    assert c1.id != c2.id
+
+
+# ── Enum 값 검증 ────────────────────────────────────────────────────────────
+def test_order_status_enum():
+    assert OrderStatus.PENDING.value == "대기"
+    assert OrderStatus.IN_PROGRESS.value == "진행중"
+    assert OrderStatus.COMPLETED.value == "완료"
+    assert OrderStatus.CANCELLED.value == "취소"
+
+
+def test_process_stage_enum():
+    assert ProcessStage.DESIGN.value == "설계"
+    assert ProcessStage.FABRICATION.value == "제조"
+    assert ProcessStage.TESTING.value == "검사"
+    assert ProcessStage.DELIVERY.value == "납품"
+
+
+def test_process_status_enum():
+    assert ProcessStatus.WAITING.value == "대기"
+    assert ProcessStatus.IN_PROGRESS.value == "진행중"
+    assert ProcessStatus.COMPLETED.value == "완료"
+
+
+# ── InMemoryRepository ─────────────────────────────────────────────────────
+def test_find_all_empty(repo):
+    assert repo.find_all() == []
+
+
+def test_save_and_find_all(repo, c1, c2):
+    repo.save(c1)
+    repo.save(c2)
+    assert len(repo.find_all()) == 2
+
+
+def test_find_by_id_found(repo, c1):
+    repo.save(c1)
+    assert repo.find_by_id(c1.id) == c1
+
+
+def test_find_by_id_not_found(repo):
+    assert repo.find_by_id("NOTEXIST") is None
+
+
+def test_update_existing(repo, c1):
+    repo.save(c1)
+    c1.name = "수정된이름"
+    assert repo.update(c1) is not None
+    assert repo.find_by_id(c1.id).name == "수정된이름"
+
+
+def test_update_not_existing(repo, c1):
+    assert repo.update(c1) is None
+
+
+def test_delete_existing(repo, c1):
+    repo.save(c1)
+    assert repo.delete(c1.id) is True
+    assert repo.find_by_id(c1.id) is None
+
+
+def test_delete_not_existing(repo):
+    assert repo.delete("NOTEXIST") is False
