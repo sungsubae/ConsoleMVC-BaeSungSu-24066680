@@ -1,0 +1,34 @@
+# IDE
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Claude Code
+.claude/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# MCP config (contains secrets)
+.mcp.json
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
